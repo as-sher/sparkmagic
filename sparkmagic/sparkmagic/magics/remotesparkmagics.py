@@ -10,7 +10,7 @@ from IPython.core.magic import line_cell_magic, needs_local_scope, line_magic
 from IPython.core.magic import magics_class
 from IPython.core.magic_arguments import argument, magic_arguments
 from hdijupyterutils.ipywidgetfactory import IpyWidgetFactory
-
+import base64
 import sparkmagic.utils.configuration as conf
 from sparkmagic.utils.utils import parse_argstring_or_throw, get_coerce_value
 from sparkmagic.utils.constants import CONTEXT_NAME_SPARK, CONTEXT_NAME_SQL, LANG_PYTHON, LANG_R, LANG_SCALA
@@ -43,6 +43,7 @@ class RemoteSparkMagics(SparkMagicBase):
               help="Context to use: '{}' for spark and '{}' for sql queries. "
                    "Default is '{}'.".format(CONTEXT_NAME_SPARK, CONTEXT_NAME_SQL, CONTEXT_NAME_SPARK))
     @argument("-s", "--session", type=str, default=None, help="The name of the Livy session to use.")
+    @argument("-f", "--encodedconf", type=str, default=None, help="encoded configuration")
     @argument("-o", "--output", type=str, default=None, help="If present, output when using SQL "
                                                              "queries will be stored in this variable.")
     @argument("-q", "--quiet", type=bool, default=False, nargs="?", const=True, help="Do not display visualizations"
@@ -128,6 +129,36 @@ class RemoteSparkMagics(SparkMagicBase):
         # config
         elif subcommand == "config":
             conf.override(conf.session_configs.__name__, json.loads(cell))
+
+        #conf file
+        elif subcommand == "encoded":
+            language = args.language
+            session = args.session
+            print(args.encodedconf)
+            conf_json = json.loads(base64.b64decode(args.encodedconf))
+            print(conf_json)
+            lang_args = conf_json['kernel_{}_credentials'.format(language)]
+            url = lang_args['url']
+            auth = lang_args['auth']
+            username = lang_args['username']
+            password = lang_args['base64_password']
+            conf.override_all(conf_json)
+
+            properties = conf.get_session_properties(language)
+
+            if url is not None:
+                endpoint = Endpoint(url, auth, username, password)
+                info_sessions = self.spark_controller.get_all_sessions_endpoint_info(endpoint)
+                print(info_sessions)
+                if session in info_sessions:
+                    print("found session")
+
+                else:
+                    print("not found")
+                    print("adding session")
+                    self.spark_controller.add_session(session, endpoint, True, properties)
+                #check if session already exists
+
         # add
         elif subcommand == "add":
             if args.url is None:
@@ -189,6 +220,6 @@ class RemoteSparkMagics(SparkMagicBase):
         {}
 """.format("\n".join(sessions_info), conf.session_configs()))
 
-        
+
 def load_ipython_extension(ip):
     ip.register_magics(RemoteSparkMagics)
