@@ -145,7 +145,7 @@ class RemoteSparkMagics(SparkMagicBase):
             conf.override_all(conf_json)
 
             properties = conf.get_session_properties(language)
-
+            print("the properties are :- {} ".format(properties))
             if url is not None:
                 endpoint = Endpoint(url, auth, username, password)
                 info_sessions = self.spark_controller.get_all_sessions_endpoint_info(endpoint)
@@ -156,7 +156,20 @@ class RemoteSparkMagics(SparkMagicBase):
                 else:
                     print("not found")
                     print("adding session")
+                    print("test build")
                     self.spark_controller.add_session(session, endpoint, True, properties)
+                    print("done adding the session")
+                    coerce = get_coerce_value(args.coerce)
+                    print("the coerce value is {}".format(coerce))
+                    print(args.context)
+                    if args.context == CONTEXT_NAME_SPARK:
+                        return self.execute_spark(cell, args.output, args.samplemethod,
+                                                  args.maxrows, args.samplefraction, session, coerce)
+                    elif args.context == CONTEXT_NAME_SQL:
+                        return self.execute_sqlquery(cell, args.samplemethod, args.maxrows, args.samplefraction,
+                                                     session, args.output, args.quiet, coerce)
+                    else:
+                        self.ipython_display.send_error("Context '{}' not found".format(args.context))
                 #check if session already exists
 
         # add
