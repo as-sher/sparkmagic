@@ -134,9 +134,7 @@ class RemoteSparkMagics(SparkMagicBase):
         elif subcommand == "encoded":
             language = args.language
             session = args.session
-            print(args.encodedconf)
             conf_json = json.loads(base64.b64decode(args.encodedconf))
-            print(conf_json)
             lang_args = conf_json['kernel_{}_credentials'.format(language)]
             url = lang_args['url']
             auth = lang_args['auth']
@@ -145,23 +143,17 @@ class RemoteSparkMagics(SparkMagicBase):
             conf.override_all(conf_json)
 
             properties = conf.get_session_properties(language)
-            print("the properties are :- {} ".format(properties))
             if url is not None:
                 endpoint = Endpoint(url, auth, username, password)
                 info_sessions = self.spark_controller.get_all_sessions_endpoint_info(endpoint)
-                print(info_sessions)
+
                 if session in info_sessions:
                     print("found session")
 
                 else:
-                    print("not found")
-                    print("adding session")
-                    print("test build")
+
                     self.spark_controller.add_session(session, endpoint, True, properties)
-                    print("done adding the session")
                     coerce = get_coerce_value(args.coerce)
-                    print("the coerce value is {}".format(coerce))
-                    print(args.context)
                     if args.context == CONTEXT_NAME_SPARK:
                         return self.execute_spark(cell, args.output, args.samplemethod,
                                                   args.maxrows, args.samplefraction, session, coerce)
