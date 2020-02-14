@@ -134,7 +134,7 @@ class RemoteSparkMagics(SparkMagicBase):
         elif subcommand == "encoded":
             language = args.language
             session = args.session
-            conf_json = json.loads(base64.b64decode(args.encodedconf))
+            conf_json = json.loads(base64.b64decode(args.encodedconf).decode('utf-8'))
             lang_args = conf_json['kernel_{}_credentials'.format(language)]
             url = lang_args['url']
             auth = lang_args['auth']
